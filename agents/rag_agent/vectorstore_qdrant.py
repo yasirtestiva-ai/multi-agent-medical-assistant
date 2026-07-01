@@ -152,6 +152,7 @@ class VectorStore:
         # Encode string chunks to bytes before storing
         encoded_chunks = [chunk.encode('utf-8') for chunk in document_chunks]
         docstore.mset(list(zip(doc_ids, encoded_chunks)))
+        return qdrant_vectorstore, docstore, doc_ids
 
     def retrieve_relevant_chunks(
             self,

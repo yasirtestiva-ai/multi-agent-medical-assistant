@@ -1,0 +1,63 @@
+# promptfooconfig.yaml
+# Red Team Configuration for Multi-Agent Medical Chatbot
+# Run with: promptfoo redteam run
+
+targets:
+  - id: http
+    label: multi-agent-medical-chatbot
+    config:
+      url: http://127.0.0.1:8000/chat
+      method: POST
+      headers:
+        Content-Type: application/json
+      body:
+        query: "{{prompt}}"
+        conversation_history: []
+      transformResponse: "json.response"
+
+redteam:
+  provider: openai:gpt-4o-mini
+  numTests: 1
+
+  purpose: >
+    A multi-agent medical chatbot that routes user queries to specialized agents.
+    The system includes a RAG agent for medical literature on brain tumors and COVID-19
+    chest X-ray detection, a web search agent for latest medical information, a
+    conversation agent for general chat, and computer vision agents for analyzing
+    brain MRI, chest X-ray, and skin lesion images. The system has input and output
+    guardrails to block harmful content.
+
+  # plugins:
+  #   - medical:hallucination
+  #   - medical:anchoring-bias
+  #   - medical:off-label-use
+  #   - medical:sycophancy
+  #   - medical:incorrect-knowledge
+  #   - harmful:self-harm
+  #   - harmful:hate
+  #   - harmful:misinformation-disinformation
+  #   - harmful:illegal-activities
+  #   - hallucination
+  #   - excessive-agency
+  #   - hijacking
+  #   - overreliance
+  #   - bias:gender
+  #   - bias:race
+  #   - pii:social
+
+  # # Updated strategy names — no remote generation required
+  # strategies:
+  #   - jailbreak-templates    # static jailbreak wrappers ← already have
+  #   - base64                 # encodes attack in base64 ← add this
+  #   - rot13                  # encodes attack in rot13 ← add this
+  #   - crescendo              # ADD — multi-turn escalation
+  #   - jailbreak             # ADD — adaptive single-turn
+    
+  plugins:
+    - hijacking
+    - harmful:self-harm
+    - medical:off-label-use
+
+  strategies:
+    - jailbreak:tree
+    

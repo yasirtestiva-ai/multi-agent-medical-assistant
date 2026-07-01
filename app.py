@@ -18,9 +18,16 @@ import requests
 from werkzeug.utils import secure_filename
 from pydub import AudioSegment
 from elevenlabs.client import ElevenLabs
+from dotenv import load_dotenv
+load_dotenv()  # must be first
 
 from config import Config
 from agents.agent_decision import process_query
+
+# ── DeepEval tracing imports ──────────────────────────────────────────────────
+from deepeval.tracing import observe, update_current_trace
+from deepeval.test_case import LLMTestCase
+# ─────────────────────────────────────────────────────────────────────────────
 
 # Load configuration
 config = Config()
@@ -91,31 +98,41 @@ def health_check():
     """Health check endpoint for Docker health checks"""
     return {"status": "healthy"}
 
+
 @app.post("/chat")
+@observe()  # ← DeepEval traces the full execution of this endpoint
 def chat(
-    request: QueryRequest, 
-    response: Response, 
+    request: QueryRequest,
+    response: Response,
     session_id: Optional[str] = Cookie(None)
 ):
     """Process user text query through the multi-agent system."""
     # Generate session ID for cookie if it doesn't exist
     if not session_id:
         session_id = str(uuid.uuid4())
-    
+
     try:
         response_data = process_query(request.query)
         response_text = response_data['messages'][-1].content
-        
+
+        # ── Register input/output with DeepEval trace ─────────────────────
+        update_current_trace(
+            test_case=LLMTestCase(
+                input=request.query,
+                actual_output=response_text
+            )
+        )
+        # ──────────────────────────────────────────────────────────────────
+
         # Set session cookie
         response.set_cookie(key="session_id", value=session_id)
 
-        # Check if the agent is skin lesion segmentation and find the image path
         result = {
             "status": "success",
-            "response": response_text, 
+            "response": response_text,
             "agent": response_data["agent_name"]
         }
-        
+
         # If it's the skin lesion segmentation agent, check for output image
         if response_data["agent_name"] == "SKIN_LESION_AGENT, HUMAN_VALIDATION":
             segmentation_path = os.path.join(SKIN_LESION_OUTPUT, "segmentation_plot.png")
@@ -123,15 +140,17 @@ def chat(
                 result["result_image"] = f"/uploads/skin_lesion_output/segmentation_plot.png"
             else:
                 print("Skin Lesion Output path does not exist.")
-        
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/upload")
+@observe()  # ← DeepEval traces the full execution of this endpoint
 async def upload_image(
     response: Response,
-    image: UploadFile = File(...), 
+    image: UploadFile = File(...),
     text: str = Form(""),
     session_id: Optional[str] = Cookie(None)
 ):
@@ -139,51 +158,59 @@ async def upload_image(
     # Validate file type
     if not allowed_file(image.filename):
         return JSONResponse(
-            status_code=400, 
+            status_code=400,
             content={
                 "status": "error",
                 "agent": "System",
                 "response": "Unsupported file type. Allowed formats: PNG, JPG, JPEG"
             }
         )
-    
+
     # Check file size before saving
     file_content = await image.read()
-    if len(file_content) > config.api.max_image_upload_size * 1024 * 1024:  # Convert MB to bytes
+    if len(file_content) > config.api.max_image_upload_size * 1024 * 1024:
         return JSONResponse(
-            status_code=413, 
+            status_code=413,
             content={
                 "status": "error",
                 "agent": "System",
                 "response": f"File too large. Maximum size allowed: {config.api.max_image_upload_size}MB"
             }
         )
-    
+
     # Generate session ID for cookie if it doesn't exist
     if not session_id:
         session_id = str(uuid.uuid4())
-    
+
     # Save file securely
     filename = secure_filename(f"{uuid.uuid4()}_{image.filename}")
     file_path = os.path.join(UPLOAD_FOLDER, filename)
     with open(file_path, "wb") as f:
         f.write(file_content)
-    
+
     try:
         query = {"text": text, "image": file_path}
         response_data = process_query(query)
         response_text = response_data['messages'][-1].content
 
+        # ── Register input/output with DeepEval trace ─────────────────────
+        update_current_trace(
+            test_case=LLMTestCase(
+                input=text if text else "Image uploaded for diagnosis",
+                actual_output=response_text
+            )
+        )
+        # ──────────────────────────────────────────────────────────────────
+
         # Set session cookie
         response.set_cookie(key="session_id", value=session_id)
 
-        # Check if the agent is skin lesion segmentation and find the image path
         result = {
             "status": "success",
-            "response": response_text, 
+            "response": response_text,
             "agent": response_data["agent_name"]
         }
-        
+
         # If it's the skin lesion segmentation agent, check for output image
         if response_data["agent_name"] == "SKIN_LESION_AGENT, HUMAN_VALIDATION":
             segmentation_path = os.path.join(SKIN_LESION_OUTPUT, "segmentation_plot.png")
@@ -191,38 +218,36 @@ async def upload_image(
                 result["result_image"] = f"/uploads/skin_lesion_output/segmentation_plot.png"
             else:
                 print("Skin Lesion Output path does not exist.")
-        
+
         # Remove temporary file after sending
         try:
             os.remove(file_path)
         except Exception as e:
             print(f"Failed to remove temporary file: {str(e)}")
-        
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/validate")
 def validate_medical_output(
     response: Response,
-    validation_result: str = Form(...), 
+    validation_result: str = Form(...),
     comments: Optional[str] = Form(None),
     session_id: Optional[str] = Cookie(None)
 ):
     """Handle human validation for medical AI outputs."""
-    # Generate session ID for cookie if it doesn't exist
     if not session_id:
         session_id = str(uuid.uuid4())
 
     try:
-        # Set session cookie
         response.set_cookie(key="session_id", value=session_id)
-        
-        # Re-run the agent decision system with the validation input
+
         validation_query = f"Validation result: {validation_result}"
         if comments:
             validation_query += f" Comments: {comments}"
-        
+
         response_data = process_query(validation_query)
 
         if validation_result.lower() == 'yes':
@@ -241,6 +266,7 @@ def validate_medical_output(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/transcribe")
 async def transcribe_audio(audio: UploadFile = File(...)):
     """Endpoint to transcribe speech using ElevenLabs API"""
@@ -249,36 +275,30 @@ async def transcribe_audio(audio: UploadFile = File(...)):
             status_code=400,
             content={"error": "No audio file selected"}
         )
-    
+
     try:
-        # Save the audio file temporarily
         os.makedirs(SPEECH_DIR, exist_ok=True)
         temp_audio = f"./{SPEECH_DIR}/speech_{uuid.uuid4()}.webm"
-        
-        # Read and save the file
+
         audio_content = await audio.read()
         with open(temp_audio, "wb") as f:
             f.write(audio_content)
-        
-        # Debug: Print file size to check if it's empty
+
         file_size = os.path.getsize(temp_audio)
         print(f"Received audio file size: {file_size} bytes")
-        
+
         if file_size == 0:
             return JSONResponse(
                 status_code=400,
                 content={"error": "Received empty audio file"}
             )
-        
-        # Convert to MP3
+
         mp3_path = f"./{SPEECH_DIR}/speech_{uuid.uuid4()}.mp3"
-        
+
         try:
-            # Use pydub with format detection
             audio = AudioSegment.from_file(temp_audio)
             audio.export(mp3_path, format="mp3")
-            
-            # Debug: Print MP3 file size
+
             mp3_size = os.path.getsize(mp3_path)
             print(f"Converted MP3 file size: {mp3_size} bytes")
 
@@ -293,15 +313,14 @@ async def transcribe_audio(audio: UploadFile = File(...)):
                 language_code="eng",
                 diarize=True,
             )
-            
-            # Clean up temp files
+
             try:
                 os.remove(temp_audio)
                 os.remove(mp3_path)
                 print(f"Deleted temp files: {temp_audio}, {mp3_path}")
             except Exception as e:
                 print(f"Could not delete file: {e}")
-            
+
             if transcription.text:
                 return {"transcript": transcription.text}
             else:
@@ -316,7 +335,7 @@ async def transcribe_audio(audio: UploadFile = File(...)):
                 status_code=500,
                 content={"error": f"Error processing audio: {str(e)}"}
             )
-                
+
     except Exception as e:
         print(f"Transcription error: {str(e)}")
         return JSONResponse(
@@ -324,20 +343,20 @@ async def transcribe_audio(audio: UploadFile = File(...)):
             content={"error": str(e)}
         )
 
+
 @app.post("/generate-speech")
 async def generate_speech(request: SpeechRequest):
     """Endpoint to generate speech using ElevenLabs API"""
     try:
         text = request.text
         selected_voice_id = request.voice_id
-        
+
         if not text:
             return JSONResponse(
                 status_code=400,
                 content={"error": "Text is required"}
             )
-        
-        # Define API request to ElevenLabs
+
         elevenlabs_url = f"https://api.elevenlabs.io/v1/text-to-speech/{selected_voice_id}/stream"
         headers = {
             "Accept": "audio/mpeg",
@@ -353,7 +372,6 @@ async def generate_speech(request: SpeechRequest):
             }
         }
 
-        # Send request to ElevenLabs API
         response = requests.post(elevenlabs_url, headers=headers, json=payload)
 
         if response.status_code != 200:
@@ -361,14 +379,12 @@ async def generate_speech(request: SpeechRequest):
                 status_code=500,
                 content={"error": f"Failed to generate speech, status: {response.status_code}", "details": response.text}
             )
-        
-        # Save the audio file temporarily
+
         os.makedirs(SPEECH_DIR, exist_ok=True)
         temp_audio_path = f"./{SPEECH_DIR}/{uuid.uuid4()}.mp3"
         with open(temp_audio_path, "wb") as f:
             f.write(response.content)
 
-        # Return the generated audio file
         return FileResponse(
             path=temp_audio_path,
             media_type="audio/mpeg",
@@ -381,7 +397,7 @@ async def generate_speech(request: SpeechRequest):
             content={"error": str(e)}
         )
 
-# Add exception handler for request entity too large
+
 @app.exception_handler(413)
 async def request_entity_too_large(request, exc):
     return JSONResponse(
@@ -392,6 +408,7 @@ async def request_entity_too_large(request, exc):
             "response": f"File too large. Maximum size allowed: {config.api.max_image_upload_size}MB"
         }
     )
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host=config.api.host, port=config.api.port)
