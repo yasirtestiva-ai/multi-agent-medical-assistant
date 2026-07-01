@@ -1,0 +1,82 @@
+{
+  "summary": {
+    "total_tests": 9,
+    "passed": 5,
+    "failed": 4,
+    "pass_rate": "55.56%"
+  },
+  "test_results": [
+    {
+      "test_case_input": "Hello, how are you today?",
+      "expected_tools": ["CONVERSATION_AGENT"],
+      "actual_tools": ["CONVERSATION_AGENT"],
+      "score": 1.0,
+      "success": true,
+      "reason": null
+    },
+    {
+      "test_case_input": "What are the symptoms of a brain tumor?",
+      "expected_tools": ["RAG_AGENT"],
+      "actual_tools": ["RAG_AGENT, WEB_SEARCH_PROCESSOR_AGENT"],
+      "score": 0.0,
+      "success": false,
+      "reason": "Incomplete tool usage: missing tools [ToolCall(name='RAG_AGENT')]; expected ['RAG_AGENT'], called ['RAG_AGENT, WEB_SEARCH_PROCESSOR_AGENT']."
+    },
+    {
+      "test_case_input": "What is the latest breakthrough in Alzheimer's treatment?",
+      "expected_tools": ["WEB_SEARCH_PROCESSOR_AGENT"],
+      "actual_tools": ["WEB_SEARCH_PROCESSOR_AGENT"],
+      "score": 1.0,
+      "success": true,
+      "reason": null
+    },
+    {
+      "test_case_input": "How is COVID-19 diagnosed from chest X-rays?",
+      "expected_tools": ["RAG_AGENT"],
+      "actual_tools": ["RAG_AGENT, WEB_SEARCH_PROCESSOR_AGENT"],
+      "score": 0.0,
+      "success": false,
+      "reason": "Incomplete tool usage: missing tools [ToolCall(name='RAG_AGENT')]; expected ['RAG_AGENT'], called ['RAG_AGENT, WEB_SEARCH_PROCESSOR_AGENT']."
+    },
+    {
+      "test_case_input": "Can you tell me more about that?",
+      "expected_tools": ["CONVERSATION_AGENT"],
+      "actual_tools": ["CONVERSATION_AGENT"],
+      "score": 1.0,
+      "success": true,
+      "reason": null
+    },
+    {
+      "test_case_input": "Analyze this X-ray",
+      "expected_tools": ["CHEST_XRAY_AGENT"],
+      "actual_tools": ["INPUT_GUARDRAILS"],
+      "score": 0.0,
+      "success": false,
+      "reason": "Incomplete tool usage: missing tools [ToolCall(name='CHEST_XRAY_AGENT')]; expected ['CHEST_XRAY_AGENT'], called ['INPUT_GUARDRAILS']."
+    },
+    {
+      "test_case_input": "Classify this skin lesion as benign or malignant",
+      "expected_tools": ["SKIN_LESION_AGENT, HUMAN_VALIDATION"],
+      "actual_tools": ["INPUT_GUARDRAILS"],
+      "score": 0.0,
+      "success": false,
+      "reason": "Incomplete tool usage: missing tools [ToolCall(name='SKIN_LESION_AGENT, HUMAN_VALIDATION')]; expected ['SKIN_LESION_AGENT, HUMAN_VALIDATION'], called ['INPUT_GUARDRAILS']."
+    },
+    {
+      "test_case_input": "What are the current COVID-19 guidelines from WHO?",
+      "expected_tools": ["WEB_SEARCH_PROCESSOR_AGENT"],
+      "actual_tools": ["WEB_SEARCH_PROCESSOR_AGENT"],
+      "score": 1.0,
+      "success": true,
+      "reason": null
+    },
+    {
+      "test_case_input": "What's the weather like in London?",
+      "expected_tools": ["CONVERSATION_AGENT"],
+      "actual_tools": ["CONVERSATION_AGENT"],
+      "score": 1.0,
+      "success": true,
+      "reason": null
+    }
+  ]
+}

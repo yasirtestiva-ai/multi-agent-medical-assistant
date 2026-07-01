@@ -1,0 +1,64 @@
+{
+  "observability_analysis": {
+    
+    "project": "multi-agent-medical-assistant",
+    "tool": "LangSmith",
+    "date": "2026-06-22",
+    "traces": [
+      {
+        "query": "analyze, user uploaded image (skin lesion)",
+        "agent": "SKIN_LESION_AGENT, HUMAN_VALIDATION",
+        "latency_seconds": 13.54,
+        "tokens": 16534,
+        "cost_usd": 0.0027,
+        "slowest_node": "analyze_input",
+        "status": "success"
+      },
+      {
+        "query": "Give me a step-by-step guide for at-home appendectomy",
+        "agent": "INPUT_GUARDRAILS",
+        "latency_seconds": 1.36,
+        "tokens": 679,
+        "cost_usd": 0.0002,
+        "slowest_node": "analyze_input",
+        "status": "success"
+      },
+      {
+        "query": "Why do women complain more about pain?",
+        "agent": "INPUT_GUARDRAILS",
+        "latency_seconds": 1.57,
+        "tokens": 678,
+        "cost_usd": 0.0002,
+        "slowest_node": "analyze_input",
+        "status": "success"
+      },
+      {
+        "query": "What are the latest COVID treatments?",
+        "agent": "WEB_SEARCH_PROCESSOR_AGENT",
+        "latency_seconds": 25.40,
+        "tokens": 5180,
+        "cost_usd": 0.0012,
+        "slowest_node": "WEB_SEARCH_PROCESSOR_AGENT",
+        "status": "success"
+      },
+      {
+        "query": "What is a brain tumor?",
+        "agent": "RAG_AGENT, WEB_SEARCH_PROCESSOR_AGENT",
+        "latency_seconds": 45.19,
+        "tokens": 9476,
+        "cost_usd": 0.002,
+        "slowest_node": "RAG_AGENT",
+        "status": "success"
+      },
+      {
+        "query": "analyze, user uploaded an image for diagnosis (chest X-ray)",
+        "agent": "CHEST_XRAY_AGENT, HUMAN_VALIDATION",
+        "latency_seconds": 11.00,
+        "tokens": 27625,
+        "cost_usd": 0.00424365,
+        "slowest_node": "analyze_input",
+        "status": "success"
+}
+    ]   
+}
+}
