@@ -86,7 +86,7 @@ for i, test_result in enumerate(results.test_results):
             {
                 "name": m.name,
                 "score": m.score,
-                "passed": m.passed,
+                "passed": m.success,
                 "reason": m.reason
             }
             for m in test_result.metrics_data

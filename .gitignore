@@ -68,7 +68,6 @@ models--*/
 
 # ── Test & eval tool outputs ─────────────────────────
 .deepeval/
-test_outputs/
 results/
 .promptfoo/
 

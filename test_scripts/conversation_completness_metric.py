@@ -1,9 +1,11 @@
-from deepeval.test_case import ConversationalTestCase, Turn
-from deepeval.metrics import ConversationCompletenessMetric
+import os
 from dotenv import load_dotenv
 load_dotenv()
 
 import requests
+from deepeval import evaluate
+from deepeval.test_case import ConversationalTestCase, Turn
+from deepeval.metrics import ConversationCompletenessMetric
 
 
 def call_chat(question: str) -> str:
@@ -20,45 +22,40 @@ metric = ConversationCompletenessMetric(threshold=0.7, model="gpt-4o-mini", incl
 # ─────────────────────────────────────────────────────────────────────────────
 # Episode 1 — Brain tumor (RAG + Web Search)
 # ─────────────────────────────────────────────────────────────────────────────
-# print("Running Episode 1...")
+print("Building Episode 1...")
 
-# q1 = "What is a brain tumor?"
-# q2 = "What are the latest treatments for brain tumors in 2024?"
-# q3 = "Is immunotherapy effective for brain tumors?"
-# q4 = "Can COVID affect brain health?"
-# q5 = "What are the newest COVID treatments available?"
+q1 = "What is a brain tumor?"
+q2 = "What are the latest treatments for brain tumors in 2024?"
+q3 = "Is immunotherapy effective for brain tumors?"
+q4 = "Can COVID affect brain health?"
+q5 = "What are the newest COVID treatments available?"
 
-# r1 = call_chat(q1)
-# r2 = call_chat(q2)
-# r3 = call_chat(q3)
-# r4 = call_chat(q4)
-# r5 = call_chat(q5)
+r1 = call_chat(q1)
+r2 = call_chat(q2)
+r3 = call_chat(q3)
+r4 = call_chat(q4)
+r5 = call_chat(q5)
 
-# episode_1 = ConversationalTestCase(
-#     turns=[
-#         Turn(role="user", content=q1),
-#         Turn(role="assistant", content=r1),
-#         Turn(role="user", content=q2),
-#         Turn(role="assistant", content=r2),
-#         Turn(role="user", content=q3),
-#         Turn(role="assistant", content=r3),
-#         Turn(role="user", content=q4),
-#         Turn(role="assistant", content=r4),
-#         Turn(role="user", content=q5),
-#         Turn(role="assistant", content=r5),
-#     ]
-# )
-
-# metric.measure(episode_1)
-# print(f"Episode 1 Score:  {metric.score}")
-# print(f"Episode 1 Passed: {metric.score >= 0.7}")
-# print(f"Episode 1 Reason: {metric.reason}\n")
+episode_1 = ConversationalTestCase(
+    turns=[
+        Turn(role="user", content=q1),
+        Turn(role="assistant", content=r1),
+        Turn(role="user", content=q2),
+        Turn(role="assistant", content=r2),
+        Turn(role="user", content=q3),
+        Turn(role="assistant", content=r3),
+        Turn(role="user", content=q4),
+        Turn(role="assistant", content=r4),
+        Turn(role="user", content=q5),
+        Turn(role="assistant", content=r5),
+    ]
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Episode 2 — Conversation agent + RAG (COVID chest X-ray literature)
 # ─────────────────────────────────────────────────────────────────────────────
-print("Running Episode 2...")
+print("Building Episode 2...")
 
 q1 = "Hi, how are you today?"
 q2 = "What does the literature say about detecting COVID from chest X-rays using deep learning?"
@@ -83,16 +80,11 @@ episode_2 = ConversationalTestCase(
     ]
 )
 
-metric.measure(episode_2)
-print(f"Episode 2 Score:  {metric.score}")
-print(f"Episode 2 Passed: {metric.score >= 0.7}")
-print(f"Episode 2 Reason: {metric.reason}\n")
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Episode 3 — Web search + cross-domain trick
 # ─────────────────────────────────────────────────────────────────────────────
-print("Running Episode 3...")
+print("Building Episode 3...")
 
 q1 = "What's the current COVID variant spreading right now?"
 q2 = "Is it more dangerous than previous variants?"
@@ -117,7 +109,14 @@ episode_3 = ConversationalTestCase(
     ]
 )
 
-metric.measure(episode_3)
-print(f"Episode 3 Score:  {metric.score}")
-print(f"Episode 3 Passed: {metric.score >= 0.7}")
-print(f"Episode 3 Reason: {metric.reason}")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Run Evaluation (syncs to Confident AI dashboard)
+# ─────────────────────────────────────────────────────────────────────────────
+print("Running evaluation on all three episodes...")
+
+evaluate(
+    test_cases=[episode_1, episode_2, episode_3],
+    metrics=[metric]
+)
+
