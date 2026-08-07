@@ -17,6 +17,7 @@
 ## Table of Contents
 
 - [What Is This Application?](#what-is-this-application)
+- [Demo](#demo)
 - [Quick Start — Run the Application](#quick-start--run-the-application)
 - [Evaluation Overview](#evaluation-overview)
 - [Evaluation Setup](#evaluation-setup)
@@ -58,6 +59,14 @@ The **Multi-Agent Medical Assistant** is a FastAPI-based chatbot that routes use
 Architecture diagram: [`assets/final-medical-assistant-flowchart-code.mermaid`](assets/final-medical-assistant-flowchart-code.mermaid)
 
 Agent details: [`agents/README.md`](agents/README.md)
+
+---
+
+## Demo
+
+https://github.com/user-attachments/assets/d27d4a2e-1c7d-45e2-bbc5-b3d95ccd5b35
+
+For a longer walkthrough, see [`assets/Multi-Agent-Medical-Assistant-v1.9_Compressed.mp4`](assets/Multi-Agent-Medical-Assistant-v1.9_Compressed.mp4).
 
 ---
 
