@@ -360,7 +360,4 @@ Multi-Agent-Medical-Assistant/
 
 This project is licensed under the **Apache-2.0 License**. See [LICENSE](LICENSE).
 
-**Souvik Majumder**
 
-- LinkedIn: [linkedin.com/in/souvikmajumder26](https://www.linkedin.com/in/souvikmajumder26)
-- GitHub: [github.com/souvikmajumder26](https://github.com/souvikmajumder26)
