@@ -61,7 +61,7 @@ test_cases = [
 # ── Metric ────────────────────────────────────────────────────────────────────
 metric = AnswerRelevancyMetric(
     threshold=0.7,
-    model="gpt-4o-mini",
+    model="gpt-4o",
     include_reason=True
 )
 
