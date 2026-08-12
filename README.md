@@ -5,33 +5,12 @@
 <h1 align="center"><strong>Multi-Agent Medical Assistant</strong></h1>
 <h6 align="center">AI-powered multi-agent system for medical diagnosis and assistance — with a DeepEval-based evaluation suite</h6>
 
-![Python - Version](https://img.shields.io/badge/PYTHON-3.11+-blue?style=for-the-badge&logo=python&logoColor=white)
+![Python - Version](https://img.shields.io/badge/PYTHON-3.12+-blue?style=for-the-badge&logo=python&logoColor=white)
 ![LangGraph - Version](https://img.shields.io/badge/LangGraph-0.3+-teal?style=for-the-badge&logo=langgraph)
 ![FastAPI - Version](https://img.shields.io/badge/FastAPI-0.115+-teal?style=for-the-badge&logo=fastapi)
 [![Generic badge](https://img.shields.io/badge/License-Apache-<COLOR>.svg?style=for-the-badge)](https://github.com/souvikmajumder26/Multi-Agent-Medical-Assistant/blob/main/LICENSE)
 
 </div>
-
----
-
-## Table of Contents
-
-- [What Is This Application?](#what-is-this-application)
-- [Demo](#demo)
-- [Quick Start — Run the Application](#quick-start--run-the-application)
-- [Evaluation Overview](#evaluation-overview)
-- [Evaluation Setup](#evaluation-setup)
-- [Evaluation Scripts](#evaluation-scripts)
-  - [Answer Relevancy](#1-answer-relevancy-test_answer_relevancypy)
-  - [Tool / Agent Correctness](#2-tool--agent-correctness-test_tool_correctnesspy)
-  - [Safety Metrics](#3-safety-metrics-safety_metricspy)
-  - [Conversation Completeness](#4-conversation-completeness-conversation_completness_metricpy)
-- [Running All Evaluations](#running-all-evaluations)
-- [Understanding Results](#understanding-results)
-- [Multi-Agent Evaluation Concepts](#multi-agent-evaluation-concepts)
-- [Project Structure](#project-structure)
-- [Further Reading](#further-reading)
-- [License & Contact](#license--contact)
 
 ---
 
@@ -72,15 +51,23 @@ For a longer walkthrough, see [`assets/Multi-Agent-Medical-Assistant-v1.9_Compre
 
 ## Quick Start — Run the Application
 
-Evaluations require the application to be **running locally** on `http://127.0.0.1:8000`.
+This guide is written so anyone can follow it, even without a technical background. Just copy each command exactly as shown, one step at a time.
+
+### Prerequisites
+
+- **Python 3.12** or higher installed on your computer. Check by running:
+  ```bash
+  python --version
+  ```
+  If you don't have it, download it from [python.org](https://www.python.org/downloads/).
 
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/souvikmajumder26/Multi-Agent-Medical-Assistant.git
-cd Multi-Agent-Medical-Assistant
+git clone https://github.com/yasirtestiva-ai/multi-agent-medical-assistant.git
+cd multi-agent-medical-assistant
 
-# Create and activate a virtual environment (Python 3.11+)
+# Create and activate a virtual environment (Python 3.12+)
 python -m venv venv
 venv\Scripts\activate        # Windows
 # source venv/bin/activate   # Mac/Linux
@@ -88,15 +75,43 @@ venv\Scripts\activate        # Windows
 pip install -r requirements.txt
 ```
 
-### 2. Configure environment
+### 2. Set up your `.env` file
 
-Create a `.env` file in the project root with your API keys (LLM, embeddings, Tavily, Hugging Face, etc.). See the [Docker setup section in the previous docs](https://github.com/souvikmajumder26/Multi-Agent-Medical-Assistant) or copy the template from `config.py` requirements.
+Create a file named `.env` in the project's root folder. This file stores your private API keys so the app can talk to the AI services it depends on. Here's how to get each key, step by step:
 
-Minimum keys needed for evaluation:
+**OpenAI API Key** (for the LLM and embeddings)
+1. Go to [platform.openai.com](https://platform.openai.com/) and sign in or create an account.
+2. Click your profile icon → **API keys**.
+3. Click **Create new secret key**, give it a name, and copy the key immediately (you won't be able to see it again).
+4. Add billing details under **Settings → Billing** if you haven't already — the API requires a funded account.
 
-- Azure OpenAI / OpenAI (LLM + embeddings)
-- `TAVILY_API_KEY` (for web search routing tests)
-- `HUGGINGFACE_TOKEN` (for RAG reranker)
+**Hugging Face Token** (used for the RAG reranker model)
+1. Go to [huggingface.co](https://huggingface.co/) and sign in or create a free account.
+2. Click your profile icon → **Settings → Access Tokens**.
+3. Click **New token**, name it, set the role to **Read**, and click **Generate**.
+4. Copy the token.
+
+**Tavily API Key** (used for web search)
+1. Go to [tavily.com](https://tavily.com/) and sign up for a free account.
+2. Once logged in, go to your **Dashboard** — your API key is shown there by default.
+3. Copy the key.
+
+**LangChain API Key & Project Name** (used for tracing/logging via LangSmith)
+1. Go to [smith.langchain.com](https://smith.langchain.com/) and sign in or create an account.
+2. Go to **Settings → API Keys** and click **Create API Key**. Copy it.
+3. Create a project (or use the default one) from the **Projects** tab, and note down its exact name — this is your project name.
+
+Once you have all four keys, open the `.env` file in any text editor and add them like this:
+
+```env
+OPENAI_API_KEY=your_openai_key_here
+HUGGINGFACE_TOKEN=your_huggingface_token_here
+TAVILY_API_KEY=your_tavily_key_here
+LANGCHAIN_API_KEY=your_langchain_key_here
+LANGCHAIN_PROJECT=your_langchain_project_name_here
+```
+
+Save the file once all keys are filled in.
 
 ### 3. Ingest RAG data (optional but recommended)
 
@@ -104,7 +119,7 @@ Minimum keys needed for evaluation:
 python ingest_rag_data.py --dir ./data/raw
 ```
 
-### 4. Start the server
+### 4. Start the application
 
 ```bash
 python app.py
@@ -113,13 +128,6 @@ python app.py
 The app will be available at **http://localhost:8000**.
 
 > **Note:** The first run may download models (CV agents, reranker, etc.) and can be slow. Retry once downloads complete.
-
-### Docker alternative
-
-```bash
-docker build -t medical-assistant .
-docker run -d --name medical-assistant-app -p 8000:8000 --env-file .env medical-assistant
-```
 
 ---
 
@@ -131,7 +139,9 @@ This repository includes a **black-box evaluation suite** built with [DeepEval](
 |--------|--------|------------------|
 | `test_scripts/test_answer_relevancy.py` | `AnswerRelevancyMetric` | Is the response relevant to the user's question? |
 | `test_scripts/test_tool_correctness.py` | `ToolCorrectnessMetric` | Did the correct agent handle the request? |
-| `test_scripts/safety_metrics.py` | `BiasMetric`, `ToxicityMetric`, `GEval` | Bias, toxicity, and medical accuracy |
+| `test_scripts/biasness.py` | `BiasMetric` | Bias in responses |
+| `test_scripts/toxicity.py` | `ToxicityMetric` | Toxicity in responses |
+| `test_scripts/gval.py` | `GEval` | Medical accuracy |
 | `test_scripts/conversation_completness_metric.py` | `ConversationCompletenessMetric` | Multi-turn intent coverage |
 
 **Judge model:** `gpt-4o-mini` (configured in each script).
@@ -219,17 +229,17 @@ python test_tool_correctness.py
 
 ---
 
-### 3. Safety Metrics (`safety_metrics.py`)
+### 3. Safety Metrics
 
-**Purpose:** Evaluate bias, toxicity, and factual medical accuracy — critical for healthcare applications.
+**Purpose:** Evaluate bias, toxicity, and factual medical accuracy — critical for healthcare applications. These are run as three separate scripts.
 
 **Metrics:**
 
-| Metric | Threshold | Lower/higher is better |
-|--------|-----------|------------------------|
-| `BiasMetric` | 0.5 | Lower score = less bias |
-| `ToxicityMetric` | 0.5 | Lower score = less toxic |
-| `GEval` (Medical Accuracy) | default | Higher score = more accurate/safe |
+| Metric | Script | Threshold | Lower/higher is better |
+|--------|--------|-----------|------------------------|
+| `BiasMetric` | `biasness.py` | 0.5 | Lower score = less bias |
+| `ToxicityMetric` | `toxicity.py` | 0.5 | Lower score = less toxic |
+| `GEval` (Medical Accuracy) | `gval.py` | default | Higher score = more accurate/safe |
 
 **Test categories:**
 
@@ -242,7 +252,9 @@ python test_tool_correctness.py
 **How to run:**
 
 ```bash
-python test_scripts/safety_metrics.py
+python test_scripts/biasness.py
+python test_scripts/gval.py
+python test_scripts/toxicity.py
 ```
 
 **Output:** Console scores with pass/fail and reasons per metric block.
@@ -287,12 +299,31 @@ python app.py
 
 ```bash
 python test_scripts/test_answer_relevancy.py
-python test_scripts/safety_metrics.py
+python test_scripts/biasness.py
+python test_scripts/gval.py
+python test_scripts/toxicity.py
 python test_scripts/conversation_completness_metric.py
 
 cd test_scripts
 python test_tool_correctness.py
 ```
+
+---
+
+## Viewing Detailed Results on the Confident AI Dashboard
+
+DeepEval can sync your evaluation results to a hosted dashboard so you can see detailed, visual reports instead of just console output. Here's how to set it up, step by step:
+
+1. **Log in to DeepEval** from your terminal:
+   ```bash
+   deepeval login
+   ```
+2. When prompted, log in using **your work email**.
+3. This opens the **Confident AI dashboard** in your browser.
+4. On the dashboard, **create a new project** (give it any name you like, e.g. "Medical Assistant Eval").
+5. Go to the project's **Settings**, and **create a new API key**.
+6. Copy that API key and **paste it into your terminal** when prompted (or set it via `deepeval login` again if asked).
+7. Now, every time you run an evaluation script, results will automatically sync to your dashboard, where you can view detailed pass/fail breakdowns, scores, and reasoning per test case.
 
 ---
 
@@ -340,14 +371,16 @@ When evaluating this system, keep these ideas in mind:
 ## Project Structure
 
 ```
-Multi-Agent-Medical-Assistant/
+multi-agent-medical-assistant/
 ├── app.py                              # FastAPI server (evaluation target)
 ├── agents/
 │   └── agent_decision.py               # LangGraph orchestration & routing
 ├── test_scripts/
 │   ├── test_answer_relevancy.py        # Answer relevancy evaluation
 │   ├── test_tool_correctness.py        # Agent routing evaluation
-│   ├── safety_metrics.py               # Bias, toxicity, medical accuracy
+│   ├── biasness.py                     # Bias evaluation
+│   ├── toxicity.py                     # Toxicity evaluation
+│   ├── gval.py                         # Medical accuracy evaluation (GEval)
 │   ├── conversation_completness_metric.py  # Multi-turn completeness
 │   └── sample_images/                  # Test images for /upload tests
 ├── results/                            # Generated eval JSON (gitignored)
@@ -368,5 +401,3 @@ Multi-Agent-Medical-Assistant/
 ## License & Contact
 
 This project is licensed under the **Apache-2.0 License**. See [LICENSE](LICENSE).
-
-
