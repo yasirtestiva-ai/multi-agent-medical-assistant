@@ -126,7 +126,7 @@ python ingest_rag_data.py --dir ./data/raw
 python app.py
 ```
 
-The app will be available at **http://localhost:8000**.
+The app will be available at **http://127.0.0.1:8000**.
 
 > **Note:** The first run may download models (CV agents, reranker, etc.) and can be slow. Retry once downloads complete.
 
